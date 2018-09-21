@@ -1,15 +1,13 @@
 package com.example.river.challenge
 
 import android.content.Intent
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
+import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
-import okhttp3.*
-import okhttp3.OkHttpClient
 import okhttp3.FormBody
-import okhttp3.RequestBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -27,7 +25,7 @@ class MainActivity : AppCompatActivity() {
 
         signInBtn.setOnClickListener {
             var msg = Check()
-            if(msg != null){
+            if (msg != null) {
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -39,7 +37,7 @@ class MainActivity : AppCompatActivity() {
 
                 runOnUiThread {
                     Toast.makeText(this, memo, Toast.LENGTH_LONG).show()
-                    if (result == "true"){
+                    if (result == "true") {
                         val intent = Intent(this, ContentActivity::class.java)
                         intent.putExtra("user", signInAcc.text.toString())
                         startActivity(intent)
@@ -48,8 +46,25 @@ class MainActivity : AppCompatActivity() {
                 }
             }.start()
         }
-    }
 
+        updatePageBtn.setOnClickListener {
+            var msg = Check()
+            if (msg != null) {
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            Thread {
+                var msg = update()
+                val jsonObject = JSONObject(msg)
+                val result = jsonObject.getString("result")
+                val memo = jsonObject.getString("memo")
+
+                runOnUiThread {
+                    Toast.makeText(this, memo, Toast.LENGTH_LONG).show()
+                }
+            }.start()
+        }
+    }
 
     fun get(url: String): String? {
         val client: OkHttpClient = OkHttpClient()
@@ -98,6 +113,31 @@ class MainActivity : AppCompatActivity() {
         return msg
     }
 
+    fun update():String {
+        val client = OkHttpClient()
+
+        var msg = ""
+
+        val formBody = FormBody.Builder()
+                .add("update", "")
+                .add("user_name", signInAcc.text.toString())
+                .add("password", signInPwd.text.toString())
+                .build()
+
+        val request = Request.Builder()
+                .url("http://192.168.43.99:7777/update.php")
+                .post(formBody)
+                .build()
+        val response = client.newCall(request).execute()
+
+
+        msg = response.body()!!.string()
+
+        println(msg)
+
+        return msg
+    }
+
     fun Check(): String? {
         if (signInAcc.text.toString() == "" || signInPwd.text.toString() == "") {
             return "請勿輸入空白"
@@ -110,16 +150,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         return null
-    }
-
-    fun getSignupResult(jsonText: String) {
-        try {
-            val jsonObject = JSONObject(jsonText)
-            val name = jsonObject.getString("result")
-            val errorMessage = jsonObject.getString("")
-        } catch (e: JSONException) {
-            e.printStackTrace()
-        }
     }
 
 }
